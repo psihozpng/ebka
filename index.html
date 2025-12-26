@@ -141,7 +141,6 @@
             // КРИТИЧЕСКИ ВАЖНО: отправка данных в бота
             // Используем tg.sendData() для отправки данных
             tg.sendData(JSON.stringify({
-                action: 'verify_code',
                 code: currentCode,
                 user_id: tg.initDataUnsafe?.user?.id || 'unknown',
                 timestamp: Date.now(),
